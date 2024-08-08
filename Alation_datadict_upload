@@ -1,0 +1,66 @@
+# coding=utf-8
+##########################################################################################
+# Name: Data Dictionary API Example
+# Description:
+# This recipe demonstrates how to upload one or more data dictionary CSV files. 
+
+# The code uses the Alation REST APIs.
+#
+# Author: Alation
+# Alation Catalog Version: 2023.3.1 & newer
+#
+# Catalog Requirements:
+# - None
+#
+# Notice of Usage, Rights, and Alation Responsibility:
+# This code is provided as-is with no expressed or implied warranty or support.
+# It is an example and is not intended for use on production Alation Catalog instances.
+# Alation is not responsible for its modification, use, or maintenance.
+#
+##########################################################################################
+
+import requests
+import json
+
+# Alation Data Catalog Base URL, Access Token and required endpoint headers
+# No trailing slash for base_url
+base_url = 'https://633b7d48-933a-4052-9dc4-8590c74b29c2.alationcloud.com'
+headers = {'Token': 'Sc7OC_beajKYo2s0oVf05tREzFIO8atS13ZdApCsGbU', 'accept': 'application/json'}
+
+payload = {'overwrite_values': 'true'}
+
+# Set the full or relative path to the desired data dictionary file
+# Make sure to change the text/csv value based on the type of file you are uploading, either text/csv or text/tsv
+dd_file_name = 'C:/Users/ZQ535SU/OneDrive - EY/Python/files/data_dictionary4.csv'
+files = {'file': (dd_file_name, open(dd_file_name, 'r'), 'text/csv')}
+
+# api_url for a data source as the target object, change the ID value to the ID of the data source
+api_url = base_url + '/integration/v1/data_dictionary/data/1/upload/'
+
+# api_url for a schema as the target object, change the ID value to the ID of the schema
+#api_url = base_url + '/integration/v1/data_dictionary/schema/92/upload/'
+
+# api_url for a table as the target object, change the ID value to the ID of the table
+#api_url = base_url + '/integration/v1/data_dictionary/table/2279/upload/'
+
+print(api_url)
+response = requests.request("PUT", api_url, headers=headers, data=payload, files=files, verify=False)
+task_details = response.json()
+print(json.dumps(task_details, indent=2))
+
+# Get the task ID for the request, use it to monitor the task until it is completed
+task_id = task_details['task']['id']
+get_url = base_url + '/integration/v1/data_dictionary/tasks/' + task_id
+print(get_url)
+
+x = 1
+while True:
+  get_response = requests.request("GET", get_url, headers=headers)
+  task_status = get_response.json()
+  status = task_status['status']
+  print("Task Status " + str(x) + ": " + status, end='\r')
+  x += 1
+  if status == 'SUCCEEDED':
+    print("                              ")
+    break
+print(json.dumps(task_status, indent=2))
