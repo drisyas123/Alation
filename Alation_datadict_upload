@@ -25,7 +25,7 @@ import json
 # Alation Data Catalog Base URL, Access Token and required endpoint headers
 # No trailing slash for base_url
 base_url = 'https://633b7d48-933a-4052-9dc4-8590c74b29c2.alationcloud.com'
-headers = {'Token': 'Sc7OC_beajKYo2s0oVf05tREzFIO8atS13ZdApCsGbU', 'accept': 'application/json'}
+headers = {'Token': '<token>', 'accept': 'application/json'}
 
 payload = {'overwrite_values': 'true'}
 
