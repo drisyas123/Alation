@@ -1,0 +1,9 @@
+pandas
+numpy
+NLTK
+gensim
+rapidfuzz
+sentence-transformers
+openpyxl
+python-dotenv
+beautifulsoup4
