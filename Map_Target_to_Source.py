@@ -37,6 +37,7 @@ similar rows on priority wise when it is computed against the Description using 
 
 
 import os
+import sys
 import pandas as pd
 import numpy as np
 import re
@@ -44,6 +45,8 @@ import json
 import requests
 import warnings
 warnings.filterwarnings("ignore")
+import tkinter as tk
+from tkinter import filedialog
 from bs4 import BeautifulSoup
 from scipy import spatial
 from dotenv import load_dotenv
@@ -59,7 +62,7 @@ ALATION_API_TOKEN = os.getenv('API_TOKEN')
 BASEURL = os.getenv('BASE_URL')
 
 def get_source_df(base_url,token,gid):
-    terms_url = '/integration/v2/term/?glossary_id=' + gid + '&limit=10&skip=0&deleted=false'
+    terms_url = '/integration/v2/term/?glossary_id=' + str(gid) + '&limit=10&skip=0&deleted=false'
     headers = {'Token': token, 'accept': 'application/json'}
     response = requests.get(base_url+terms_url, headers=headers,verify=False).json()
     source_df = pd.DataFrame.from_dict(response, orient='columns')
@@ -358,7 +361,7 @@ def process_field(row):
 
 def Input(file_name,gid):
     target_df = get_source_df(BASEURL,ALATION_API_TOKEN,gid)
-    source_df = pd.read_csv(file_name + ".csv")
+    source_df = pd.read_csv(file_name)
     source_df = source_df[source_df['al_datadict_item_properties'].str.split(';',expand=True)[1]=='otype=attribute']
     source_df['Attribute_Name'] = source_df['key'].str.split('.',expand=True)[3]
     source_df['description'] = source_df['description'].astype(str).apply(remove_html_tags)
@@ -370,6 +373,36 @@ def Input(file_name,gid):
     target_df['AttributeDescription'] = target_df[['Attribute', 'Description']].astype(str).agg(' '.join, axis=1)
     return source_df, target_df
 
+def save_dataframe_to_excel(df,initialFileName):
+    root = tk.Tk()
+
+    # Open save file dialog
+    file_path = filedialog.asksaveasfilename(initialfile=initialFileName,defaultextension=".xlsx", 
+                                             filetypes=[("Excel files", "*.xlsx"), 
+                                                        ("All files", "*.*")])
+    root.destroy()
+
+    if file_path:
+        df.to_excel(file_path, index=False)
+        print(f"DataFrame saved to {file_path}")
+    else:
+        print("Save operation cancelled.")
+
+def save_dataframe_to_csv(df,initialFileName):
+    root = tk.Tk()
+
+    # Open save file dialog
+    file_path = filedialog.asksaveasfilename(initialfile=initialFileName,defaultextension=".csv", 
+                                             filetypes=[("CSV files", "*.csv"), 
+                                                        ("All files", "*.*")])
+    root.destroy()
+
+    if file_path:
+        df.to_csv(file_path, index=False)
+        print(f"DataFrame saved to {file_path}")
+    else:
+        print("Save operation cancelled.")
+
 def main(file_name,gid, source_table, source_attribute, source_description, target_table, target_attribute, target_description):
     source, target = Input(file_name,gid)
     #source = pd.DataFrame(sourceReq)
@@ -379,17 +412,33 @@ def main(file_name,gid, source_table, source_attribute, source_description, targ
     mapped_source_df = get_mapped_targets(source, target, source_table, source_attribute, source_description, target_table, target_attribute, target_description)
     mapped_source_df.rename(columns={"Source Table":"Source Key"}, inplace=True)
     mapped_source_df.drop(['Target Table 1','Source Attribute Description'], axis=1, inplace=True)
-    mapped_source_df = mapped_source_df[mapped_source_df['Total Score'] > 60]
+    # mapped_source_df = mapped_source_df[mapped_source_df['Total Score'] > 60]
     business_df = mapped_source_df.drop(['Fuzzy Score', 'Semantic Score','Total Score','Partial_Match_Score'], axis =1)
     business_df['Suggested business term'] = ""
-    print("Business file and tech files are generated")
-    return mapped_source_df.to_excel("techFile.xlsx",index=False),business_df.to_excel("business.xlsx",index=False)
+    print("Please save the Tech file:")
+    save_dataframe_to_excel(mapped_source_df,"Tech_Data")
+    print("Please save the business file:")
+    save_dataframe_to_excel(business_df,"Business_data")
+    print("*** Technical and Business files are saved successfully ***")
 
-if __name__ == "__main__":
-    # Inputs from the user
-    inputFileName = input("Please enter the Data Dictionary file name: ")
-    gid = input("Please enter the Glossary ID: ")
 
+if __name__ == "__main__":  
+    try: # Loop until a valid file is selected
+        print("Please select the Data Dictionary file to be updated: ")
+        root = tk.Tk() 
+        inputFileName = filedialog.askopenfilename()
+        print("Selected Data Dictionary file:",inputFileName)
+        
+        if inputFileName == "":
+            print("You have not selected a Data Dictionary and hence cannot proceed further")
+            sys.exit()
+        gid = input("Please enter the Glossary ID from Alation: ")
+    except NameError as e:
+        print("You have not selected a Data Dictionary and hence cannot proceed further")
+    
+    
+
+    
     # Run the script with the provided inputs
     main(inputFileName, gid, "Table", "Attribute", "Description", "Table", "Attribute", "Description")
 
