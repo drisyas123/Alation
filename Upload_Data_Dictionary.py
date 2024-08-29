@@ -76,7 +76,7 @@ if alationDCUpdate.upper() == "Y":
    files = {'file': (dd_file_name, open(dd_file_name, 'r'), 'text/csv')}
 
    # api_url for a data source as the target object, change the ID value to the ID of the data source
-   api_url = BASEURL + '/integration/v1/data_dictionary/table/4/upload/'
+   api_url = BASEURL + '/integration/v1/data_dictionary/table/129/upload/'
 
    # print(api_url)
    response = requests.request("PUT", api_url, headers=headers, data=payload, files=files, verify=False)
